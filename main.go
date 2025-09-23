@@ -23,45 +23,48 @@ type (
 
 // Node struct
 type Node struct {
-	addr        string
-	processList []string
+	addr     string
+	nodeList []string
 }
 
-func readClusterConfig(filename string) ([]string, error) {
+func (n *Node) readClusterConfigAndSet(filename string) {
 	file, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		return
 	}
 	defer file.Close()
 
-	var processList []string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line != "" {
-			processList = append(processList, line)
+			n.nodeList = append(n.nodeList, line)
 		}
 	}
-	return processList, scanner.Err()
 }
 
-func main() {
-	p := &Node{}
-	processList, err := readClusterConfig("cluster.conf")
-	if err != nil {
-		fmt.Println("Error reading cluster config:", err)
-		return
-	}
-	p.processList = processList
+func (n *Node) readNodeIndexAndSet() {
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: go run main.go <node_index>")
 		return
 	}
 	index, err := strconv.Atoi(os.Args[1])
-	if err != nil || index < 0 || index >= len(processList) {
+	if err != nil || index < 0 || index >= len(n.nodeList) {
 		fmt.Println("Invalid node index")
 		return
 	}
-	p.addr = processList[index]
-	fmt.Println("Node address:", p.addr)
+	n.addr = n.nodeList[index]
+}
+
+func NewNode() *Node {
+	n := new(Node)
+	n.readClusterConfigAndSet("cluster.conf")
+	n.readNodeIndexAndSet()
+	return n
+}
+
+func main() {
+	n := NewNode()
+	fmt.Println("Node address:", n.addr)
+	fmt.Println("Cluster nodes:", n.nodeList)
 }
