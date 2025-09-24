@@ -7,8 +7,7 @@ import (
 )
 
 func (n *Node) setupRPCListen() {
-	service := new(Node)
-	err := rpc.Register(service)
+	err := rpc.Register(n)
 	if err != nil {
 		fmt.Println("Error registering RPC service:", err)
 		return
@@ -46,7 +45,7 @@ func (n *Node) initRPCClients() {
 				if _, exists := n.rpcClient[addr]; !exists {
 					client, err := n.makeRPCClient(addr)
 					if err != nil {
-						fmt.Println("Error connecting to", addr, ":", err)
+						//fmt.Println("Error connecting to", addr, ":", err)
 						continue
 					}
 					n.rpcClient[addr] = client

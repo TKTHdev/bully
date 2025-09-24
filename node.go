@@ -24,25 +24,46 @@ func NewNode() *Node {
 	return n
 }
 
-func (n *Node) PingToUpperNodes() {
+func (n *Node) electionToUpperNodes() bool {
 	for _, addr := range n.nodeList {
 		if addr > n.addr {
-			args := &PingArgs{}
-			reply := &PingReply{}
-			err := n.sendRPC(addr, PingRPC, args, reply)
+			args := &ElectionArgs{Addr: n.addr}
+			reply := &ElectionReply{}
+			err := n.sendRPC(addr, ElectionRPC, args, reply)
+			fmt.Println("reply from", addr, ":", reply)
 			if err != nil {
-
-			} else {
+				fmt.Println("Error sending Election RPC to", addr, ":", err)
 				continue
+			} else {
+				if reply.IsLeader {
+					n.leader = addr
+				}
+				return true
 			}
 		}
 	}
+	return false
+}
 
+func (n *Node) pingLeader() bool {
+	if n.leader == "" || n.isLeader {
+		return false
+	}
+	args := &PingArgs{Addr: n.addr}
+	reply := &PingReply{}
+	err := n.sendRPC(n.leader, PingRPC, args, reply)
+	if err != nil {
+		n.leader = ""
+		return false
+	} else {
+		return true
+	}
 }
 
 func (n *Node) run() {
 	go n.initRPCClients()
 	defer n.cleanUpRPCClient()
+
 	fmt.Println("Process: ", n.addr, "started")
 
 	for {
@@ -51,5 +72,20 @@ func (n *Node) run() {
 			continue
 		}
 
+		fmt.Println("leader:", n.leader)
+
+		ping := n.pingLeader()
+		fmt.Println("Ping leader:", ping)
+		if ping {
+			continue
+		} else {
+			respFromUpperNode := n.electionToUpperNodes()
+			if !respFromUpperNode {
+				fmt.Println("I am a leader")
+				n.isLeader = true
+			} else {
+				continue
+			}
+		}
 	}
 }
