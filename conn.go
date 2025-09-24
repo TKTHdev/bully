@@ -2,15 +2,31 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/rpc"
 )
 
-func (n *Node) setupRPC() {
+func (n *Node) setupRPCListen() {
 	service := new(Node)
 	err := rpc.Register(service)
 	if err != nil {
 		fmt.Println("Error registering RPC service:", err)
 		return
+	}
+	l, err := net.Listen("tcp", n.addr)
+	if err != nil {
+		fmt.Println("Error starting RPC listener:", err)
+		return
+	}
+	fmt.Println("Listening for RPCs on", n.addr)
+	defer l.Close()
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting RPC connection:", err)
+			continue
+		}
+		go rpc.ServeConn(conn)
 	}
 }
 
@@ -24,13 +40,18 @@ func (n *Node) makeRPCClient(targetAddr string) (*rpc.Client, error) {
 
 func (n *Node) initRPCClients() {
 	n.rpcClient = make(map[string]*rpc.Client)
-	for _, addr := range n.nodeList {
-		if addr != n.addr {
-			client, err := n.makeRPCClient(addr)
-			if err != nil {
-				fmt.Println("Error creating RPC client for", addr, ":", err)
-			} else {
-				n.rpcClient[addr] = client
+	for {
+		for _, addr := range n.nodeList {
+			if addr != n.addr {
+				if _, exists := n.rpcClient[addr]; !exists {
+					client, err := n.makeRPCClient(addr)
+					if err != nil {
+						fmt.Println("Error connecting to", addr, ":", err)
+						continue
+					}
+					n.rpcClient[addr] = client
+					fmt.Println("Connected to", addr)
+				}
 			}
 		}
 	}

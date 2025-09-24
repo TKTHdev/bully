@@ -19,7 +19,7 @@ func (n *Node) readClusterConfigAndSet(filename string) {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line != "" {
-			n.nodeList = append(n.nodeList, line)
+			n.nodeList = append(n.nodeList, ":"+line)
 		}
 	}
 }

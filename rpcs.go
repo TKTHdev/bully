@@ -26,5 +26,9 @@ func (n *Node) sendRPC(targetAddr string, method string, args interface{}, reply
 	if !ok {
 		return fmt.Errorf("no RPC client for address: %s", targetAddr)
 	}
-	return client.Call(method, args, reply)
+	if err := client.Call(method, args, reply); err != nil {
+		n.rpcClient[targetAddr] = nil
+		return err
+	}
+	return nil
 }

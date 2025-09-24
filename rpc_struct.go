@@ -1,14 +1,20 @@
 package main
 
 type (
-	ElectionArgs  struct{}
+	ElectionArgs struct {
+		addr string
+	}
 	ElectionReply struct{}
 
-	CoordinatorArgs struct{}
+	CoordinatorArgs struct {
+		addr string
+	}
 
 	CoordinatorReply struct{}
 
-	PingArgs struct{}
+	PingArgs struct {
+		addr string
+	}
 
 	PingReply struct{}
 )
