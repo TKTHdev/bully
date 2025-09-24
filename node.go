@@ -19,5 +19,4 @@ func NewNode() *Node {
 func (n *Node) run() {
 	n.initRPCClients()
 	defer n.cleanUpRPCClient()
-
 }
