@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/rpc"
+	"slices"
+	"sync"
 	"time"
 )
 
@@ -12,6 +14,7 @@ type Node struct {
 	rpcClient map[string]*rpc.Client
 	isLeader  bool
 	leader    string
+	mu        sync.Mutex
 }
 
 func NewNode() *Node {
@@ -25,6 +28,7 @@ func NewNode() *Node {
 }
 
 func (n *Node) electionToUpperNodes() bool {
+
 	for _, addr := range n.nodeList {
 		if addr > n.addr {
 			args := &ElectionArgs{Addr: n.addr}
@@ -69,10 +73,26 @@ func (n *Node) pingLeader() bool {
 	reply := &PingReply{}
 	err := n.sendRPC(n.leader, PingRPC, args, reply)
 	if err != nil {
-		n.leader = ""
 		return false
 	} else {
 		return true
+	}
+}
+
+func (n *Node) startElection() {
+	if slices.Max(n.nodeList) == n.addr {
+		n.isLeader = true
+		n.leader = n.addr
+		n.coordinatorToLowerNodes()
+		return
+	}
+
+	respFromUpperNode := n.electionToUpperNodes()
+	if !respFromUpperNode {
+		fmt.Println("I am a leader")
+		n.isLeader = true
+		n.leader = n.addr
+		n.coordinatorToLowerNodes()
 	}
 }
 
@@ -95,15 +115,7 @@ func (n *Node) run() {
 		if ping {
 			continue
 		} else {
-			respFromUpperNode := n.electionToUpperNodes()
-			if !respFromUpperNode {
-				fmt.Println("I am a leader")
-				n.isLeader = true
-				n.leader = n.addr
-				n.coordinatorToLowerNodes()
-			} else {
-				continue
-			}
+			n.startElection()
 		}
 	}
 }

@@ -39,20 +39,27 @@ func (n *Node) makeRPCClient(targetAddr string) (*rpc.Client, error) {
 
 func (n *Node) initRPCClients() {
 	n.rpcClient = make(map[string]*rpc.Client)
+	fmt.Println("Initializing RPC clients...")
 	for {
 		for _, addr := range n.nodeList {
 			if addr != n.addr {
-				if _, exists := n.rpcClient[addr]; !exists {
-					client, err := n.makeRPCClient(addr)
-					if err != nil {
-						//fmt.Println("Error connecting to", addr, ":", err)
-						continue
-					}
-					n.rpcClient[addr] = client
-					fmt.Println("Connected to", addr)
-				}
+				n.checkConnectionAndConnect(addr)
 			}
 		}
+	}
+}
+
+func (n *Node) checkConnectionAndConnect(addr string) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if _, exists := n.rpcClient[addr]; !exists {
+		client, err := n.makeRPCClient(addr)
+		if err != nil {
+			//fmt.Println("Error connecting to", addr, ":", err)
+			return
+		}
+		n.rpcClient[addr] = client
+		return
 	}
 }
 

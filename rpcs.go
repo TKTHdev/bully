@@ -11,6 +11,10 @@ const (
 func (n *Node) Election(args *ElectionArgs, reply *ElectionReply) error {
 	fmt.Println("I am a node: ", n.addr, " received Election from ", args.Addr, " isLeader:", n.isLeader)
 	reply.IsLeader = n.isLeader
+	if !n.isLeader {
+		n.leader = ""
+		n.startElection()
+	}
 	return nil
 }
 
@@ -27,6 +31,8 @@ func (n *Node) Ping(args *PingArgs, reply *PingReply) error {
 }
 
 func (n *Node) sendRPC(targetAddr string, method string, args interface{}, reply interface{}) error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
 	client, ok := n.rpcClient[targetAddr]
 	if !ok {
 		return fmt.Errorf("no RPC client for address: %s", targetAddr)
