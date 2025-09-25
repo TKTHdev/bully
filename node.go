@@ -45,6 +45,22 @@ func (n *Node) electionToUpperNodes() bool {
 	return false
 }
 
+func (n *Node) coordinatorToLowerNodes() {
+	for _, addr := range n.nodeList {
+		if addr < n.addr {
+			args := &CoordinatorArgs{Addr: n.addr}
+			reply := &CoordinatorReply{}
+			err := n.sendRPC(addr, CoordinatorRPC, args, reply)
+			if err != nil {
+				fmt.Println("Error sending Coordinator RPC to", addr, ":", err)
+				continue
+			} else {
+				fmt.Println("Sent Coordinator RPC to", addr)
+			}
+		}
+	}
+}
+
 func (n *Node) pingLeader() bool {
 	if n.leader == "" || n.isLeader {
 		return false
@@ -83,6 +99,8 @@ func (n *Node) run() {
 			if !respFromUpperNode {
 				fmt.Println("I am a leader")
 				n.isLeader = true
+				n.leader = n.addr
+				n.coordinatorToLowerNodes()
 			} else {
 				continue
 			}

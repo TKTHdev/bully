@@ -15,6 +15,9 @@ func (n *Node) Election(args *ElectionArgs, reply *ElectionReply) error {
 }
 
 func (n *Node) Coordinator(args *CoordinatorArgs, reply *CoordinatorReply) error {
+	fmt.Println("Received Coordinator from ", args.Addr)
+	n.leader = args.Addr
+	n.isLeader = false
 	return nil
 }
 
@@ -30,6 +33,7 @@ func (n *Node) sendRPC(targetAddr string, method string, args interface{}, reply
 	}
 	if err := client.Call(method, args, reply); err != nil {
 		n.rpcClient[targetAddr].Close()
+		delete(n.rpcClient, targetAddr)
 		return err
 	}
 	return nil
